@@ -1,114 +1,87 @@
-# HomeBot-ROS2-Navigation
-HomeBot-ROS2-Navigation: A ROS2-powered robotic platform for autonomous indoor navigation and mapping.
+```markdown
+# Indoor Navigation System using ROS2
 
-![HomeBot Image](mobile_robot_gazebo.gif) 
+An autonomous indoor navigation system built on **ROS 2 Humble** that enables a mobile robot to map unknown environments, localize itself, and navigate to target positions while dynamically avoiding obstacles.
 
-## Project Overview
-This repository contains a suite of ROS2 packages for the HomeBot, an autonomous robot designed for indoor navigation and mapping. The provided image showcases the HomeBot's physical design, which the following packages bring to life:
+##  Overview
+Traditional GPS fails in indoor settings due to signal interference. This project implements a robust alternative using **SLAM**, **AMCL**, and **Nav2** to provide essential capabilities for service robots, warehouse automation, and assistive robotics.
 
-- `robot_description`: Defines the robot's physical parameters, including its URDF files, visual meshes, and essential configurations for simulation purposes.
-- `robot_simulation`: Contains the necessary configurations and launch files for simulating the HomeBot in a household environment, using tools like Gazebo and RViz for SLAM and navigation testing.
-- `robot_patrol`: Implements a patrolling behavior, directing the robot to navigate autonomously through a series of predefined waypoints based on the generated map data.
+### Key Features
+* **SLAM (Simultaneous Localization and Mapping):** Uses LiDAR and Odometry fusion to build 2D occupancy grid maps in real-time.
+* **Robust Localization:** Employs Adaptive Monte Carlo Localization (AMCL) for precise positioning within known maps.
+* **Dynamic Path Planning:** Combines global planners (A*/Dijkstra) with local planners (DWA) for optimal routing and reactive obstacle avoidance.
+* **Simulation Ready:** Fully compatible with the **Gazebo** simulator for testing before hardware deployment.
 
-These packages represent the core components of the HomeBot's functionality, demonstrating practical applications of ROS2 in robotic indoor navigation.
+##  Tech Stack
+* **Framework:** ROS 2 Humble
+* **Navigation:** Nav2 (Navigation2 Stack)
+* **Algorithms:** SLAM (Gmapping/Cartographer), AMCL, DWA
+* **Simulation & Tools:** Gazebo, RViz2
+* **Languages:** Python, C++
+* **Libraries:** `tf2`, `sensor_msgs`, `nav_msgs`, `geometry_msgs`
 
-## Getting Started
+##  Repository Structure
+```text
+Indoor-Navigation-System-Ros2/
+├── description/        # URDF and Xacro robot models
+├── launch/             # ROS 2 launch files for system bringup
+├── config/             # Navigation and SLAM parameter files
+├── maps/               # Saved occupancy grid maps (.yaml, .pgm)
+├── worlds/             # Gazebo simulation environment files
+├── package.xml         # Package dependencies
+└── CMakeLists.txt      # Build instructions
+```
+
+##  Installation & Setup
+
 ### Prerequisites
-  **ROS2 (tested with ROS2 Humble)** - [Documentation](https://docs.ros.org/en/humble/index.html)
-  
-  **Python 3.10**
+* Ubuntu 22.04 (Jammy Jellyfish)
+* ROS 2 Humble Desktop Install
+* Nav2 and Gazebo plugins:
+    ```bash
+    sudo apt install ros-humble-navigation2 ros-humble-nav2-bringup ros-humble-gazebo-ros-pkgs
+    ```
 
-  **Nav2** - [Github](https://github.com/ros-planning/navigation2) and [Documentation](https://navigation.ros.org/)
-  
-  **Slam_toolbox** - [Github](https://github.com/SteveMacenski/slam_toolbox)
-    
-## Installation
+### Build Instructions
+1.  Create a workspace and clone the repository:
+    ```bash
+    mkdir -p ~/nav_ws/src
+    cd ~/nav_ws/src
+    git clone [https://github.com/sunishka-sarkar/Indoor-Navigation-System-Ros2.git](https://github.com/sunishka-sarkar/Indoor-Navigation-System-Ros2.git)
+    ```
+2.  Install dependencies and build:
+    ```bash
+    cd ~/nav_ws
+    rosdep install --from-paths src --ignore-src -r -y
+    colcon build --symlink-install
+    source install/setup.bash
+    ```
 
-1. **Create a ROS 2 workspace (if one does not already exist):**
-   
-   ```sh
-   mkdir ~/your_workspace-name_ws
-   cd ~/your_workspace-name_ws
-   
-2. **Clone this repository into your workspace:**
-   
-   ```sh
-   git clone https://github.com/aimechengineer/HomeBot-ROS2-Navigation.git src
+##  Usage
 
-3. **Build the workspace:**
-   ```sh
-   cd ~/your_workspace-name_ws
-   colcon build --symlink-install
+### 1. Mapping (SLAM)
+To start the environment mapping process:
+```bash
+ros2 launch indoor_navigation_system_ros2 online_async_launch.py
+```
+Drive the robot using a teleop node to generate the map in RViz2.
 
-4. **Source the setup script:**
-   ```sh
-   source ~/your_workspace-name_ws/install/setup.bash
-   
-## Additional Steps for Gazebo Simulation
-If Gazebo does not launch the simulation correctly, use the following commands to set up the robot_description package in the Gazebo models directory, keeping only the meshes directory:
+### 2. Navigation
+Once a map is saved, launch the navigation stack:
+```bash
+ros2 launch indoor_navigation_system_ros2 navigation_launch.py use_sim_time:=true map:=/path/to/map.yaml
+```
+Use the **"2D Goal Pose"** button in RViz2 to set a destination.
 
-1. **Copy the entire robot_description package to the Gazebo models directory**
-   
-   ```sh
-   cp -r path_to_robot_description_package ~/.gazebo/models/robot_description   
-Replace **path_to_robot_description_package** with the actual path to your **robot_description** package.
+##  Outcomes
+The system successfully achieves:
+* Accurate 2D map generation of structured indoor environments.
+* Real-time obstacle detection and path re-planning.
+* Reliable localization despite sensor noise and odometry drift.
 
-2. **Remove all contents from the copied robot_description package except for the meshes directory**
-
-   Navigate to the robot_description directory in the Gazebo models directory:
-
-       cd ~/.gazebo/models/robot_description
-
-   Then, remove all directories except for meshes:
-
-       rm -rf !(meshes)
-   This process will ensure that only the meshes directory is retained in the robot_description package within the Gazebo models directory, which should help resolve any simulation launch issues.
-
-## Usage
-### robot_description
-**Display HomeBot in RViz:**
-
-    ros2 launch robot_description display.launch.xml
-
-**Display HomeBot in Gazebo and Rviz:**
-
-    ros2 launch robot_description gazebo.launch.xml
-
-### robot_simulation and robot_patrol
-#### SLAM Process
-Perform SLAM and generate a map of the environment:
-
-1. **Launch the SLAM simulation:**
-   Start the SLAM Process:
-
-       ros2 launch robot_simulation house_slam.launch.py
-       
-3. **Control HomeBot:**
-   Use teleop to manually control HomeBot during SLAM:
-   
-       ros2 run teleop_twist_keyboard teleop_twist_keyboard
-   
-![HomeBot Image](slam.gif)  
-
-#### Autonomous Navigation
-Navigate autonomously in the environment post-SLAM:
-1. **Launch Gazebo and RViz with Nav2 Configuration**:
-   To initialize the simulation environment in Gazebo along with RViz configured for Nav2, use the following launch command:
-
-       ros2 launch robot_simulation house_sim.launch.py
-   
-3. **Start Navigation:**
-   Launch the navigation stack:
-
-       ros2 launch robot_simulation autonomous_navigation.launch.py
-
-   Once the 2D Pose Estimate is set in RViz, HomeBot can autonomously navigate the environment. Alternatively, you can start the patrol mode:
-
-       ros2 run robot_patrol robot_patrol 
-   In patrol mode, HomeBot will navigate to predefined locations autonomously.
-
-![HomeBot Image](navigation.gif) 
-
-## License
-
-This project is licensed under the MIT License - see the ![LICENSE](LICENSE)  file for details.
+## 👥 Contributors
+* **Sunishka Sarkar** -     PES2UG23CS628
+* **T Dheeraj Sai Skand** - PES2UG23CS637
+* **Tanishq Raj** -         PES2UG23CS642
+* **Tanishq Singh Mehta** - PES2UG23CS643
+```
